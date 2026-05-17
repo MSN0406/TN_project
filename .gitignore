@@ -1,0 +1,93 @@
+# ===== Data (private / IRB-protected — never commit) =====
+nnUNet_data/
+prepared_data/
+prepared_data_openneuro/
+prepared_data_openneuro_t2w/
+nn/
+data/raw/
+*.nii
+*.nii.gz
+*.dcm
+
+# ===== Model weights & training state =====
+checkpoints/
+runs/
+*.pth
+*.pt
+*.ckpt
+*.h5
+*.onnx
+
+# ===== Precomputed / derived artifacts =====
+precomputed_phase2_crop96/
+precomputed_phase2_crop96_pred/
+precomputed_phase2_crop96_pred_20260306/
+precomputed_phase2_crop96_gt_joint/
+precomputed_phase2_crop96_maskcent/
+precomputed_phase2_crop96_maskcent_smoke10/
+precomputed_phase2_crop96_smoke/
+
+# ===== Inference / visualization outputs =====
+viz_*/
+verify_*/
+pred_*/
+tmp_*/
+itk_*/
+vis_patches/
+diag_outputs/
+inference/
+paper_figs_locseg/
+Formatting_Instructions_For_NeurIPS_2026/regen_*/
+
+# ===== Logs =====
+logs/
+*.log
+nohup_*.out
+training.log
+
+# ===== LaTeX build artifacts =====
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.out
+*.synctex.gz
+*.toc
+
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*.so
+.Python
+*.egg-info/
+*.egg
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# ===== Virtualenv / package mgrs =====
+.venv/
+venv/
+env/
+.conda/
+
+# ===== IDE / tooling =====
+.idea/
+.vscode/
+.claude/
+.DS_Store
+Thumbs.db
+
+# ===== Third-party large assets =====
+*.pdf
+*.pptx
+!Formatting_Instructions_For_NeurIPS_2026/*.pdf   # allow paper PDFs if user wants
+
+# ===== Misc =====
+*.swp
+*.swo
+*~
+.ipynb_checkpoints/

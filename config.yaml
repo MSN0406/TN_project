@@ -1,0 +1,104 @@
+# ============================================================
+# LocSegNet - 三叉神经定位+分割一体网络 配置文件
+# ============================================================
+
+# --- 数据路径 ---
+data:
+  nii_root: ${TN_RAW_DATA_DIR}/NIFTI
+  crop_root: ${TN_RAW_DATA_DIR}/2020-22_MRIs_Cropped_and_Segmentations
+  ipsi_csv: ${TN_RAW_DATA_DIR}/2020-22_MRIs_Cropped_and_Segmentations/202022_centroids_ipsilateral.csv
+  contra_csv: ${TN_RAW_DATA_DIR}/2020-22_MRIs_Cropped_and_Segmentations/202022_centroids_contralateral.csv
+  prepared_dir: ./prepared_data  # 预处理后数据目录
+  train_val_split: 0.8  # 训练集比例
+  random_seed: 42
+
+# --- 定位网络 ---
+localization:
+  input_size: [128, 128, 128]  # downsample whole brain 到此分辨率
+  encoder: resnet18_3d          # 轻量级 3D ResNet
+  encoder_channels: [16, 32, 64, 128, 256]
+  heatmap_sigma: 2.0            # GT heatmap 的 Gaussian sigma (voxels in low-res space, 越小峰越尖锐)
+  use_soft_argmax: true
+
+# --- 分割网络 ---
+segmentation:
+  crop_size: [64, 64, 64]       # ROI 裁剪尺寸 (full resolution)
+  num_classes: 3                 # 0=background, 1=nerve(神经), 2=vessel(血管)
+  class_names: [background, nerve, vessel]
+  # 类别权重 (CE loss 用, sqrt inverse frequency, 从数据统计得出)
+  # background=0.07, nerve=1.48, vessel=1.46
+  class_weights: [0.07, 1.48, 1.46]
+  # nnUNet-style 3D U-Net
+  encoder_channels: [32, 64, 128, 256, 512]
+  num_res_blocks: 2
+  norm: instance                 # instance normalization
+  activation: leaky_relu
+  deep_supervision: true
+  deep_supervision_weights: [1.0, 0.5, 0.25, 0.125]
+
+# --- 训练 ---
+training:
+  # 三阶段课程训练
+  phase1:
+    name: localization_only
+    epochs: 100
+    lr: 1.0e-3
+    batch_size: 12
+    weight_decay: 1.0e-5
+  phase2:
+    name: segmentation_only
+    epochs: 200
+    lr: 1.0e-3
+    batch_size: 6
+    weight_decay: 1.0e-5
+    use_gt_centroid: true        # 用 GT centroid 裁剪
+  phase3:
+    name: joint_finetune
+    epochs: 100
+    lr: 1.0e-4
+    batch_size: 4
+    weight_decay: 1.0e-5
+    loc_loss_weight: 0.3         # α
+    seg_loss_weight: 1.0         # β
+
+  optimizer: AdamW
+  scheduler: cosine
+  num_workers: 4
+  pin_memory: true
+
+# --- 损失函数 ---
+loss:
+  localization: mse              # heatmap MSE
+  segmentation: dice_ce          # Dice + CrossEntropy (nnUNet 标配)
+  dice_weight: 1.0
+  ce_weight: 1.0
+
+# --- 数据增强 ---
+augmentation:
+  # 定位阶段
+  loc_augmentation:
+    random_flip: [0.5, 0.0, 0.0]  # 仅左右翻转 (注意 ipsi/contra 语义)
+    random_rotation: 15            # 度
+    random_scale: [0.9, 1.1]
+    intensity_shift: 0.1
+    intensity_scale: 0.1
+
+  # 分割阶段 (参考 nnUNet 策略)
+  seg_augmentation:
+    random_flip: [0.5, 0.5, 0.5]
+    random_rotation: 15
+    random_scale: [0.85, 1.25]
+    gamma_range: [0.7, 1.5]
+    gaussian_noise_std: 0.01
+    gaussian_blur_sigma: [0.5, 1.0]
+    elastic_deformation: false     # 可选, 训练较慢
+
+# --- 设备 ---
+device:
+  type: cuda                     # cuda 或 cpu
+  gpu_id: 1                      # 使用哪张 GPU (0/1/2), 仅 type=cuda 时有效
+
+# --- 输出 ---
+output:
+  runs_dir: ./runs   # 每次训练自动在此下创建 run_YYYYMMDD_HHMMSS/ 子目录
+  save_every: 10                  # 每 N epoch 保存

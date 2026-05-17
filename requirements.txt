@@ -1,0 +1,10 @@
+torch>=2.0
+nibabel
+numpy
+pandas
+tifffile
+scipy
+pyyaml
+matplotlib
+tqdm
+dynamic_network_architectures
